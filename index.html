@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>총공 Mint Player v3</title>
+<title>총공 Mint Player v4</title>
 <style>
 body {
     margin: 0;
     font-family: "Pretendard", sans-serif;
-    background-color: #e9fffa;
-    color: #222;
+    background: linear-gradient(135deg, #e0fff9 0%, #b8fff0 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 20px;
 }
+
 #player-wrapper {
     position: relative;
     width: 90%;
@@ -29,35 +29,34 @@ body {
 .status {
     margin-top: 20px;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
     font-size: 1.2rem;
+    color: #00BFA5;
+    text-shadow: 1px 1px 3px #000;
 }
-.mint-text { color: #00bfa5; }
-.timer { margin-top: 8px; font-size: 1.1rem; color: #009e8b; }
-.messages { margin-top: 10px; height: 24px; overflow: hidden; position: relative; }
-.messages span { position: absolute; width: 100%; opacity: 0; animation: fadeCycle 12s infinite; }
-.messages span:nth-child(1) { animation-delay: 0s; }
-.messages span:nth-child(2) { animation-delay: 4s; }
-.messages span:nth-child(3) { animation-delay: 8s; }
-@keyframes fadeCycle {
- 0% { opacity: 0; transform: translateY(10px); }
- 10% { opacity: 1; transform: translateY(0); }
- 30% { opacity: 1; }
- 40% { opacity: 0; transform: translateY(-10px); }
- 100% { opacity: 0; }
+
+.timer {
+    margin-top: 10px;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #00FFC2;
+    animation: blink 1.2s infinite;
 }
-button {
+
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.5} }
+
+#start-btn {
     margin-top: 20px;
-    padding: 10px 20px;
-    background: #00bfa5;
-    color: white;
+    padding: 12px 28px;
+    background: #00BFA5;
+    color: #fff;
     border: none;
-    border-radius: 8px;
-    font-weight: 600;
+    border-radius: 10px;
+    font-weight: 700;
     cursor: pointer;
     transition: background 0.3s;
 }
-button:hover { background: #009e8b; }
+#start-btn:hover { background: #00FFC2; }
 
 .thumbnail-list {
     margin-top: 30px;
@@ -65,17 +64,54 @@ button:hover { background: #009e8b; }
     flex-wrap: wrap;
     justify-content: center;
     gap: 15px;
-    max-width: 700px;
+    max-width: 800px;
 }
-.thumb { width: 140px; text-align: center; cursor: pointer; }
+
+.thumb {
+    width: 140px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+}
 .thumb img {
     width: 100%;
-    border-radius: 10px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.2);
-    transition: transform 0.2s ease;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease;
 }
-.thumb img:hover { transform: scale(1.05); }
-.thumb-title { margin-top: 5px; font-size: 0.9rem; }
+.thumb img:hover { transform: scale(1.08) rotate(-2deg); }
+.thumb-title {
+    height: 40px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #00BFA5;
+    text-shadow: 0 0 2px #000;
+    margin-top: 4px;
+}
+
+.next-thumb {
+    width: 180px;
+    border: 3px solid #00FFC2;
+    border-radius: 12px;
+    box-shadow: 0 0 12px #00FFC2;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+.next-thumb::after {
+    content: "NEXT ▶";
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background: #00FFC2;
+    color: #fff;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+}
+.video-playing { animation: pulse 1.2s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.1);} }
 </style>
 </head>
 <body>
@@ -84,16 +120,11 @@ button:hover { background: #009e8b; }
   <div id="player"></div>
 </div>
 
-<div class="status">
-  🎵 <span id="current-title" class="mint-text">준비 중...</span>
-</div>
+<div class="status">🎵 <span id="current-title">준비 중...</span></div>
 <div class="timer">남은 시간: <span id="remaining-time">0</span>초</div>
-<div class="messages">
-  <span>🔥 총공 중! 민트 파워 업!</span>
-  <span>💚 좋아요 + 조회수 상승 중!</span>
-  <span>🚀 함께하는 힘이 다릅니다!</span>
-</div>
 <button id="start-btn">▶ 랜덤 재생 시작</button>
+
+<div id="next-video" class="next-thumb"></div>
 
 <div class="thumbnail-list" id="thumbnail-list"></div>
 
@@ -109,12 +140,12 @@ const videoList = [
 
 ];
 
-let player;
-let timer = null;
-let remaining = 0;
+let player, timer = null, remaining = 0, currentVideo = null, nextVideo = null;
+
+const thumbContainer = document.getElementById("thumbnail-list");
+const nextVideoEl = document.getElementById("next-video");
 
 // 썸네일 리스트 생성
-const thumbContainer = document.getElementById("thumbnail-list");
 videoList.forEach(v => {
   const div = document.createElement("div");
   div.className = "thumb";
@@ -136,45 +167,49 @@ function onYouTubeIframeAPIReady() {
 function onPlayerReady() { console.log("Player ready"); }
 
 function onPlayerStateChange(event) {
-  if (event.data === YT.PlayerState.PLAYING && remaining === 0) {
+  if(event.data === YT.PlayerState.PLAYING && remaining === 0){
     startRandomTimer();
   }
 }
 
-// 랜덤 재생
-function playRandomVideo() {
-  const idx = Math.floor(Math.random() * videoList.length);
-  const video = videoList[idx];
-  playVideo(video.id, video.title);
+function getRandomDuration() { return Math.floor(Math.random()*11)+45; }
+
+function pickNextVideo(){
+  let idx;
+  do { idx = Math.floor(Math.random()*videoList.length); }
+  while(videoList[idx].id === currentVideo?.id && videoList.length>1);
+  nextVideo = videoList[idx];
+  // 다음 영상 표시
+  nextVideoEl.innerHTML = `<img src="https://img.youtube.com/vi/${nextVideo.id}/hqdefault.jpg">
+                           <div class="thumb-title">${nextVideo.title}</div>`;
 }
 
-function playVideo(id, title) {
+function playRandomVideo(){ pickNextVideo(); playVideo(nextVideo.id, nextVideo.title); }
+
+function playVideo(id, title){
   clearInterval(timer);
-  remaining = 0;
+  remaining=0;
   document.getElementById("current-title").textContent = title;
   document.getElementById("remaining-time").textContent = remaining;
+  currentVideo = {id, title};
+  pickNextVideo();
   player.loadVideoById(id);
 }
 
-// 45~55초 랜덤 타이머
-function startRandomTimer() {
-  remaining = Math.floor(Math.random() * 11) + 45;
-  document.getElementById("remaining-time").textContent = remaining;
-
-  timer = setInterval(() => {
+function startRandomTimer(){
+  remaining=getRandomDuration();
+  document.getElementById("remaining-time").textContent=remaining;
+  timer=setInterval(()=>{
     remaining--;
-    document.getElementById("remaining-time").textContent = remaining;
-    if (remaining <= 0) {
+    document.getElementById("remaining-time").textContent=remaining;
+    if(remaining<=0){
       clearInterval(timer);
       playRandomVideo();
     }
-  }, 1000);
+  },1000);
 }
 
-// 사용자 클릭 후 시작
-document.getElementById("start-btn").addEventListener("click", () => {
-  playRandomVideo();
-});
+document.getElementById("start-btn").addEventListener("click",()=>{ playRandomVideo(); });
 </script>
 
 </body>
