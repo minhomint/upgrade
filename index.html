@@ -3,135 +3,119 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>총공 Mint Player v4</title>
+<title>총공 랜덤 플레이어 깔끔형</title>
 <style>
 body {
     margin: 0;
-    font-family: "Pretendard", sans-serif;
-    background: linear-gradient(135deg, #e0fff9 0%, #b8fff0 100%);
+    font-family: Arial, sans-serif;
+    background: #f0f8f8;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 20px;
 }
-
 #player-wrapper {
-    position: relative;
     width: 90%;
     max-width: 900px;
-    height: 60vh;
-    border-radius: 16px;
+    height: 50vh;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 0 20px rgba(0,255,200,0.3);
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 #player { width: 100%; height: 100%; }
 
 .status {
-    margin-top: 20px;
+    margin-top: 15px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #00bfa5;
     text-align: center;
-    font-weight: 700;
-    font-size: 1.2rem;
-    color: #00BFA5;
-    text-shadow: 1px 1px 3px #000;
 }
 
 .timer {
-    margin-top: 10px;
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: #00FFC2;
-    animation: blink 1.2s infinite;
+    margin-top: 5px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #00bfa5;
+    text-align: center;
 }
-
-@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.5} }
 
 #start-btn {
-    margin-top: 20px;
-    padding: 12px 28px;
-    background: #00BFA5;
+    margin-top: 15px;
+    padding: 10px 24px;
+    background: #00bfa5;
     color: #fff;
     border: none;
-    border-radius: 10px;
-    font-weight: 700;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 0.3s;
+    font-weight: 600;
 }
-#start-btn:hover { background: #00FFC2; }
+#start-btn:hover { background: #00d0b0; }
+
+#next-video {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#next-video img {
+    width: 160px;
+    border-radius: 8px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.2);
+}
+
+#next-video .title {
+    margin-top: 6px;
+    font-size: 0.95rem;
+    color: #333;
+    text-align: center;
+}
 
 .thumbnail-list {
-    margin-top: 30px;
+    margin-top: 25px;
     display: flex;
     flex-wrap: wrap;
+    gap: 12px;
     justify-content: center;
-    gap: 15px;
-    max-width: 800px;
 }
-
 .thumb {
-    width: 140px;
+    width: 120px;
     text-align: center;
     cursor: pointer;
-    position: relative;
 }
 .thumb img {
     width: 100%;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
-    transition: transform 0.3s ease;
+    border-radius: 8px;
 }
-.thumb img:hover { transform: scale(1.08) rotate(-2deg); }
-.thumb-title {
-    height: 40px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #00BFA5;
-    text-shadow: 0 0 2px #000;
+.thumb .thumb-title {
     margin-top: 4px;
+    font-size: 0.85rem;
+    color: #333;
 }
-
-.next-thumb {
-    width: 180px;
-    border: 3px solid #00FFC2;
-    border-radius: 12px;
-    box-shadow: 0 0 12px #00FFC2;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 15px;
-}
-.next-thumb::after {
-    content: "NEXT ▶";
-    position: absolute;
-    bottom: 5px;
-    right: 5px;
-    background: #00FFC2;
-    color: #fff;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-}
-.video-playing { animation: pulse 1.2s infinite; }
-@keyframes pulse { 0%,100%{transform:scale(1);}50%{transform:scale(1.1);} }
 </style>
 </head>
 <body>
 
 <div id="player-wrapper">
-  <div id="player"></div>
+    <div id="player"></div>
 </div>
 
-<div class="status">🎵 <span id="current-title">준비 중...</span></div>
+<div class="status">현재 재생: <span id="current-title">준비 중...</span></div>
 <div class="timer">남은 시간: <span id="remaining-time">0</span>초</div>
 <button id="start-btn">▶ 랜덤 재생 시작</button>
 
-<div id="next-video" class="next-thumb"></div>
+<div id="next-video">
+    <img src="" alt="다음 영상" id="next-thumb">
+    <div class="title" id="next-title"></div>
+</div>
 
 <div class="thumbnail-list" id="thumbnail-list"></div>
 
 <script src="https://www.youtube.com/iframe_api"></script>
 <script>
-const videoList = [
-  { id: 'ZJo6KHpI-2k', title: '한계령 (Hankyeryeong Pass) Official MV' },
+const videos = [
+   { id: 'ZJo6KHpI-2k', title: '한계령 (Hankyeryeong Pass) Official MV' },
             { id: 'BRiBNS0aTVo', title: '내 곁에 있어주 | 야외녹음실 ｜LIVE' },
             { id: '-zYhlQn6yVI', title: '내 이름 아시죠 | 사랑의콜센타' },
             { id: '0JeQF_nrSmU', title: '내 곁에 있어주 (Stay by My Side) Official MV' },
@@ -140,73 +124,66 @@ const videoList = [
 
 ];
 
-let player, timer = null, remaining = 0, currentVideo = null, nextVideo = null;
-
-const thumbContainer = document.getElementById("thumbnail-list");
-const nextVideoEl = document.getElementById("next-video");
+let player, timer=null, remaining=0, currentVideo=null, nextVideo=null;
+const currentTitleEl = document.getElementById("current-title");
+const remainingEl = document.getElementById("remaining-time");
+const nextThumbEl = document.getElementById("next-thumb");
+const nextTitleEl = document.getElementById("next-title");
 
 // 썸네일 리스트 생성
-videoList.forEach(v => {
-  const div = document.createElement("div");
-  div.className = "thumb";
-  div.innerHTML = `<img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg" alt="${v.title}" />
+const thumbContainer = document.getElementById("thumbnail-list");
+videos.forEach(v=>{
+    const div = document.createElement("div");
+    div.className="thumb";
+    div.innerHTML=`<img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg" alt="${v.title}">
                    <div class="thumb-title">${v.title}</div>`;
-  div.onclick = () => playVideo(v.id, v.title);
-  thumbContainer.appendChild(div);
+    div.onclick=()=>playVideo(v.id, v.title);
+    thumbContainer.appendChild(div);
 });
 
 // YouTube API
-function onYouTubeIframeAPIReady() {
-  player = new YT.Player("player", {
-    videoId: videoList[0].id,
-    playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1 },
-    events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange }
-  });
+function onYouTubeIframeAPIReady(){
+    player = new YT.Player("player",{
+        videoId: videos[0].id,
+        playerVars:{ autoplay:0, controls:1, rel:0, modestbranding:1 }
+    });
 }
 
-function onPlayerReady() { console.log("Player ready"); }
-
-function onPlayerStateChange(event) {
-  if(event.data === YT.PlayerState.PLAYING && remaining === 0){
-    startRandomTimer();
-  }
-}
-
-function getRandomDuration() { return Math.floor(Math.random()*11)+45; }
+function getRandomDuration(){ return Math.floor(Math.random()*11)+45; }
 
 function pickNextVideo(){
-  let idx;
-  do { idx = Math.floor(Math.random()*videoList.length); }
-  while(videoList[idx].id === currentVideo?.id && videoList.length>1);
-  nextVideo = videoList[idx];
-  // 다음 영상 표시
-  nextVideoEl.innerHTML = `<img src="https://img.youtube.com/vi/${nextVideo.id}/hqdefault.jpg">
-                           <div class="thumb-title">${nextVideo.title}</div>`;
+    let idx;
+    do { idx = Math.floor(Math.random()*videos.length); }
+    while(videos[idx].id === currentVideo?.id && videos.length>1);
+    nextVideo = videos[idx];
+    nextThumbEl.src = `https://img.youtube.com/vi/${nextVideo.id}/hqdefault.jpg`;
+    nextTitleEl.textContent = nextVideo.title;
 }
 
 function playRandomVideo(){ pickNextVideo(); playVideo(nextVideo.id, nextVideo.title); }
 
 function playVideo(id, title){
-  clearInterval(timer);
-  remaining=0;
-  document.getElementById("current-title").textContent = title;
-  document.getElementById("remaining-time").textContent = remaining;
-  currentVideo = {id, title};
-  pickNextVideo();
-  player.loadVideoById(id);
+    if(timer) clearInterval(timer);
+    remaining=0;
+    currentVideo={id,title};
+    currentTitleEl.textContent=title;
+    remainingEl.textContent=remaining;
+    pickNextVideo();
+    player.loadVideoById(id);
+    startTimer();
 }
 
-function startRandomTimer(){
-  remaining=getRandomDuration();
-  document.getElementById("remaining-time").textContent=remaining;
-  timer=setInterval(()=>{
-    remaining--;
-    document.getElementById("remaining-time").textContent=remaining;
-    if(remaining<=0){
-      clearInterval(timer);
-      playRandomVideo();
-    }
-  },1000);
+function startTimer(){
+    remaining = getRandomDuration();
+    remainingEl.textContent=remaining;
+    timer=setInterval(()=>{
+        remaining--;
+        remainingEl.textContent=remaining;
+        if(remaining<=0){
+            clearInterval(timer);
+            playRandomVideo();
+        }
+    },1000);
 }
 
 document.getElementById("start-btn").addEventListener("click",()=>{ playRandomVideo(); });
