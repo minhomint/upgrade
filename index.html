@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>총공 Mint Player v2</title>
+<title>총공 Mint Player v2.5</title>
 <style>
   body {
     margin: 0;
@@ -13,9 +13,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
-    overflow: hidden;
+    padding: 20px;
   }
 
   #player {
@@ -38,23 +36,12 @@
     color: #00bfa5;
   }
 
-  /* 게이지바 */
-  .progress-container {
-    width: 80%;
-    height: 8px;
-    background: #dffcf7;
-    border-radius: 4px;
-    margin-top: 15px;
-    overflow: hidden;
-  }
-  .progress-bar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #00bfa5, #4affd9);
-    transition: width 1s linear;
+  .timer {
+    margin-top: 8px;
+    font-size: 1.1rem;
+    color: #009e8b;
   }
 
-  /* 문구 페이드 애니메이션 */
   .messages {
     margin-top: 10px;
     height: 24px;
@@ -93,6 +80,33 @@
   button:hover {
     background: #009e8b;
   }
+
+  .thumbnail-list {
+    margin-top: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    max-width: 700px;
+  }
+  .thumb {
+    width: 140px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .thumb img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease;
+  }
+  .thumb img:hover {
+    transform: scale(1.05);
+  }
+  .thumb-title {
+    margin-top: 5px;
+    font-size: 0.9rem;
+  }
 </style>
 </head>
 <body>
@@ -100,9 +114,7 @@
   <div class="status">
     🎵 <span id="current-title" class="mint-text"></span>
   </div>
-  <div class="progress-container">
-    <div id="progress-bar" class="progress-bar"></div>
-  </div>
+  <div class="timer">남은 시간: <span id="remaining-time">0</span>초</div>
   <div class="messages">
     <span>🔥 총공 중! 민트 파워 업!</span>
     <span>💚 좋아요 + 조회수 상승 중!</span>
@@ -110,11 +122,13 @@
   </div>
   <button onclick="playRandomVideo()">▶ 랜덤 재생 시작</button>
 
+  <div class="thumbnail-list" id="thumbnail-list"></div>
+
   <script src="https://www.youtube.com/iframe_api"></script>
   <script>
-    // 🎬 영상 리스트 — 필요시 자유롭게 수정 가능
+    // 🎬 영상 리스트 — 자유롭게 수정 가능
     const videoList = [
-            { id: 'ZJo6KHpI-2k', title: '한계령 (Hankyeryeong Pass) Official MV' },
+      { id: 'ZJo6KHpI-2k', title: '한계령 (Hankyeryeong Pass) Official MV' },
             { id: 'BRiBNS0aTVo', title: '내 곁에 있어주 | 야외녹음실 ｜LIVE' },
             { id: '-zYhlQn6yVI', title: '내 이름 아시죠 | 사랑의콜센타' },
             { id: '0JeQF_nrSmU', title: '내 곁에 있어주 (Stay by My Side) Official MV' },
@@ -125,45 +139,55 @@
 
     let player;
     let timer = null;
-    let progressTimer = null;
     let totalDuration = 0;
     let remaining = 0;
 
-    // ✅ YouTube IFrame API 로드 후 초기화
+    // ✅ 썸네일 리스트 생성
+    const thumbContainer = document.getElementById("thumbnail-list");
+    videoList.forEach((v) => {
+      const div = document.createElement("div");
+      div.className = "thumb";
+      div.innerHTML = `
+        <img src="https://img.youtube.com/vi/${v.id}/hqdefault.jpg" alt="${v.title}" />
+        <div class="thumb-title">${v.title}</div>
+      `;
+      div.onclick = () => playVideo(v.id, v.title);
+      thumbContainer.appendChild(div);
+    });
+
+    // ✅ YouTube API 초기화
     function onYouTubeIframeAPIReady() {
       player = new YT.Player("player", {
         videoId: videoList[0].id,
-        playerVars: {
-          autoplay: 0,
-          controls: 1,
-          rel: 0,
-          modestbranding: 1,
-          mute: 0
-        },
+        playerVars: { autoplay: 0, controls: 1, rel: 0, modestbranding: 1 },
         events: { onReady: onPlayerReady, onStateChange: onPlayerStateChange }
       });
     }
 
     function onPlayerReady() {
-      console.log("YouTube Player Ready");
+      console.log("Player ready");
     }
 
     function onPlayerStateChange(event) {
-      // 광고 후 자동 재생 보완
+      // 광고가 끝난 뒤 영상이 재생되면 타이머 시작
       if (event.data === YT.PlayerState.PLAYING && remaining === 0) {
         startRandomTimer();
       }
     }
 
-    // 🔁 랜덤 재생 함수
+    // 🔁 랜덤 재생
     function playRandomVideo() {
-      clearInterval(timer);
-      clearInterval(progressTimer);
       const randomIndex = Math.floor(Math.random() * videoList.length);
       const video = videoList[randomIndex];
+      playVideo(video.id, video.title);
+    }
 
-      document.getElementById("current-title").textContent = video.title;
-      player.loadVideoById(video.id);
+    function playVideo(id, title) {
+      clearInterval(timer);
+      document.getElementById("current-title").textContent = title;
+      document.getElementById("remaining-time").textContent = 0;
+      remaining = 0;
+      player.loadVideoById(id);
     }
 
     // ⏱ 45~55초 랜덤 타이머
@@ -171,17 +195,11 @@
       totalDuration = Math.floor(Math.random() * 11) + 45; // 45~55초
       remaining = totalDuration;
 
-      const bar = document.getElementById("progress-bar");
-      bar.style.width = "0%";
-
       timer = setInterval(() => {
         remaining--;
-        const percent = ((totalDuration - remaining) / totalDuration) * 100;
-        bar.style.width = percent + "%";
-
+        document.getElementById("remaining-time").textContent = remaining;
         if (remaining <= 0) {
           clearInterval(timer);
-          bar.style.width = "100%";
           playRandomVideo();
         }
       }, 1000);
